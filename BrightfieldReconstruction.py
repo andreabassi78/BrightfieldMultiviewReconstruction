@@ -57,8 +57,7 @@ def find_z(sample, cx , distance = 10, half_width = 120, plot_all = False):
     contrasts = []
     centers = [] 
     
-    czs = range(int(nz/2-distance), int(nz/2+distance))
-    #czs = range(150, 160)     
+    czs = range(int(nz/2-distance), int(nz/2+distance)) 
     area_width = int(half_width/2)
     
     for cz in tqdm(czs):
@@ -92,7 +91,7 @@ def find_z(sample, cx , distance = 10, half_width = 120, plot_all = False):
     idx = contrasts.index(max(contrasts))
     best_cz = centers[idx]
     
-    print ('Best constrast at cz = ',best_cz)
+    print ('Best contrast at cz = ',best_cz)
     plt.plot(centers,contrasts)
     plt.title('Contrast')
     plt.xlabel('cz: axial position of the rotation axis (px)')
@@ -110,7 +109,7 @@ def reconstruct(sample, Cx, Cz, half_width = 140, deconvolve = False):
         half_width: semize of the reconstructed rectangle 
         deconvolve: if True apply xz devonvolution on each view before reconstruction
     Return:
-        avg_im:     reconstructed section 
+        reconstructed:     reconstructed section 
     """ 
     sample_selection = sample[:,Cz-half_width:Cz+half_width,Cx-half_width:Cx+half_width]
     
@@ -130,14 +129,15 @@ def reconstruct(sample, Cx, Cz, half_width = 140, deconvolve = False):
                          preserve_range=True,
                          mode='reflect')
         sum_im += rotated
-    avg_im = sum_im/nangles
-    return(avg_im)
+    reconstructed = sum_im/nangles
+    
+    return(reconstructed)
 
 
 """
 Example code for reconstruction of a zebrafish embryo (3.5dpf) section, 
 acquired with a 10X , NA 0.3 multiview brightfield microscope with angular step of 10°
-shown in Calisesi et al., Supplementary Figure 2. 
+shown in Calisesi et al., Supplementary Figure 2. Pixelsize is 1.625um.
 
 Please note that the resliced data have been previously interpolated to provide isotropic 
 sampling in x and z and zero padded to obtain a squared image. 
@@ -159,7 +159,7 @@ sample = sample/np.amax(sample)
 nangles,nz,nx  = sample.shape
 rotation_angle = 360/(nangles)  
 
-show_some_views(sample, num_views_to_show=4)
+#show_some_views(sample, num_views_to_show=4)
 
 
 Cx = int(nx/2) # the x component of the rotation axis is in the center of sample along x
