@@ -69,11 +69,11 @@ def find_z(sample, cx , distance = 10, half_width = 120, plot_all = False):
         contrast_area = reconstructed[half_width-area_width: half_width+area_width,
                                       half_width-area_width: half_width+area_width]
         
-        # calculate the 2D fft of the reconstructed image
+        # calculate the 2D fft of the reconstructed image, excluding the CW component
         contrast_area_fft = np.abs((fft2(contrast_area)))[1:,1:]  
-        # the contrast is given by the standard deviation of the fft (escluding the CW component)
+        # the contrast is given by the standard deviation of the fft
         # this is an estimate of the bandwidth of the reconstructed image 
-        contrast = np.var(contrast_area_fft)
+        contrast = np.std(contrast_area_fft)
         
         if plot_all:
             plt.gray()
@@ -144,6 +144,8 @@ sampling in x and z and zero padded to obtain a squared image.
 This step could be avoided to significantly increase reconstruction speed.
 
 Along the x direction the data have been centered following the method described in Calisesi et al. (Fig 3).  
+
+The region reconstructed around the sample where the views only partially overlap is left on porpuse.
 
 """
 
