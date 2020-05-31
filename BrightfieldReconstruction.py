@@ -19,8 +19,7 @@ from tifffile import imread
 import matplotlib.pyplot as plt
 from skimage.transform import rotate
 import numpy as np
-from skimage.restoration import richardson_lucy as deconv
-#from skimage.restoration import wiener as deconv
+from skimage.restoration import wiener
 from tqdm import tqdm
 from numpy.fft import fft2
 
@@ -41,7 +40,7 @@ def show_some_views(sample, num_views_to_show):
         plt.show()
     
 
-def find_z(sample, cx , distance = 10, half_width = 120, plot_all = False):
+def find_z(sample, cx , distance = 10, half_width = 100, plot_all = False):
     """
     Finds the z coordinate of the rotation axis.
     Parameters:
@@ -69,11 +68,10 @@ def find_z(sample, cx , distance = 10, half_width = 120, plot_all = False):
         contrast_area = reconstructed[half_width-area_width: half_width+area_width,
                                       half_width-area_width: half_width+area_width]
         
-        # calculate the 2D fft of the reconstructed image, excluding the CW component
+        # calculate the 2D fft of the reconstructed image, excluding the DC component
         contrast_area_fft = np.abs((fft2(contrast_area)))[1:,1:]  
-        # the contrast is given by the standard deviation of the fft
-        # this is an estimate of the bandwidth of the reconstructed image 
-        contrast = np.std(contrast_area_fft)
+        # the contrast is given by the energy of the fft, excluding the DC component, as in autofocus systems
+        contrast = np.sum(contrast_area_fft)
         
         if plot_all:
             plt.gray()
@@ -118,9 +116,9 @@ def reconstruct(sample, Cx, Cz, half_width = 140, deconvolve = False):
     for angle_index, angle in enumerate(np.arange(0,360, rotation_angle)):
         
         if deconvolve:
-            view = deconv(sample_selection[angle_index,:,:],
+            view = wiener(sample_selection[angle_index,:,:],
                           psf,
-                          iterations=20)
+                          balance = 0.1)    
         else:
             view = sample_selection[angle_index,:,:]    
             
@@ -135,7 +133,7 @@ def reconstruct(sample, Cx, Cz, half_width = 140, deconvolve = False):
 
 
 """
-Example code for reconstruction of a zebrafish embryo (3.5dpf) section, 
+Example code for reconstruction of a zebrafish embryo (3.5dpf) tranverse section (head)  
 acquired with a 10X , NA 0.3 multiview brightfield microscope with angular step of 10°
 shown in Calisesi et al., Supplementary Figure 2. Pixelsize is 1.625um.
 
@@ -145,7 +143,8 @@ This step could be avoided to significantly increase reconstruction speed.
 
 Along the x direction the data have been centered following the method described in Calisesi et al. (Fig 3).  
 
-The region reconstructed around the sample where the views only partially overlap is left on porpuse.
+The region reconstructed around the sample where the views only partially overlap
+is left on purpose to show the spacial range that can be effectively reconstructed 
 
 """
 
@@ -161,12 +160,11 @@ sample = sample/np.amax(sample)
 nangles,nz,nx  = sample.shape
 rotation_angle = 360/(nangles)  
 
-#show_some_views(sample, num_views_to_show=4)
-
+show_some_views(sample, num_views_to_show=1)
 
 Cx = int(nx/2) # the x component of the rotation axis is in the center of sample along x
 
-Cz = find_z(sample, Cx, distance = 15, plot_all=False)
+Cz = find_z(sample, Cx, distance = 20, plot_all=False)
 
 halfwidth =  int(min ((Cz,nz-Cz,nz/2,nx/2))) 
 reconstructed = reconstruct(sample,Cx,Cz,halfwidth, deconvolve = False)
@@ -177,4 +175,3 @@ plt.imshow(reconstructed)
 plt.colorbar()
 plt.title('Reconstructed section')
 plt.show()
-
